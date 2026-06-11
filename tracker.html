@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Manoj's Mission Control</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --card: #16161f;
+    --border: #22222e;
+    --accent: #7c6aff;
+    --accent2: #ff6a6a;
+    --accent3: #6affb0;
+    --text: #e8e8f0;
+    --muted: #666680;
+    --done: #2a2a3a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    min-height: 100vh;
+    padding-bottom: 80px;
+  }
+
+  /* HEADER */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 20px 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .header-title {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+  .header-date {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .streak-badge {
+    background: linear-gradient(135deg, var(--accent), #a855f7);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  /* STATS ROW */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    padding: 14px 20px;
+  }
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 10px;
+    text-align: center;
+  }
+  .stat-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1;
+  }
+  .stat-label {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .stat-num.green { color: var(--accent3); }
+  .stat-num.red { color: var(--accent2); }
+  .stat-num.purple { color: var(--accent); }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    padding: 0 20px;
+    gap: 6px;
+    margin-bottom: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 7px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+  .tab.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  /* SECTIONS */
+  .section {
+    display: none;
+    padding: 16px 20px;
+  }
+  .section.active { display: block; }
+
+  .section-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+
+  /* TASK CARD */
+  .task-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    transition: opacity 0.3s;
+    cursor: pointer;
+  }
+  .task-card.done {
+    opacity: 0.45;
+    background: var(--done);
+  }
+  .task-card.done .task-title {
+    text-decoration: line-through;
+    color: var(--muted);
+  }
+  .checkbox {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    margin-top: 1px;
+  }
+  .task-card.done .checkbox {
+    background: var(--accent3);
+    border-color: var(--accent3);
+  }
+  .checkbox-inner {
+    width: 8px;
+    height: 8px;
+    background: #fff;
+    border-radius: 50%;
+    display: none;
+  }
+  .task-card.done .checkbox-inner { display: block; }
+  .task-body { flex: 1; }
+  .task-title {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+    margin-bottom: 4px;
+  }
+  .task-meta {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .tag {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+  .tag.ml { background: #1a1a3a; color: #7c6aff; }
+  .tag.iot { background: #1a2a1a; color: #6affb0; }
+  .tag.career { background: #2a1a1a; color: #ff6a6a; }
+  .tag.general { background: #1a2a2a; color: #6ac5ff; }
+  .task-priority {
+    font-size: 10px;
+    color: var(--muted);
+  }
+  .priority-high { color: var(--accent2); }
+  .priority-med { color: #ffb86a; }
+  .priority-low { color: var(--muted); }
+
+  /* ADD TASK */
+  .add-task-area {
+    background: var(--card);
+    border: 1px dashed var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 10px;
+    display: none;
+  }
+  .add-task-area.open { display: block; }
+  .add-input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    padding: 10px 12px;
+    width: 100%;
+    margin-bottom: 10px;
+    outline: none;
+  }
+  .add-input:focus { border-color: var(--accent); }
+  .add-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .add-select {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 12px;
+    padding: 6px 10px;
+    outline: none;
+    flex: 1;
+    min-width: 100px;
+  }
+  .btn {
+    border: none;
+    border-radius: 10px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .btn:active { opacity: 0.7; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-ghost { background: var(--border); color: var(--muted); }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+  .add-trigger {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: 1px dashed var(--border);
+    border-radius: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    padding: 12px 16px;
+    width: 100%;
+    transition: border-color 0.2s;
+  }
+  .add-trigger:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* GOALS */
+  .goal-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .goal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+  }
+  .goal-title {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.3;
+    flex: 1;
+  }
+  .goal-deadline {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-left: 10px;
+    white-space: nowrap;
+  }
+  .progress-bar {
+    background: var(--border);
+    border-radius: 4px;
+    height: 6px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--accent), var(--accent3));
+    transition: width 0.4s;
+  }
+  .goal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .goal-pct {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .goal-controls { display: flex; gap: 6px; }
+  .goal-btn {
+    background: var(--border);
+    border: none;
+    border-radius: 6px;
+    color: var(--text);
+    cursor: pointer;
+    font-size: 16px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* STREAK CALENDAR */
+  .streak-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+    margin-bottom: 14px;
+  }
+  .streak-day {
+    aspect-ratio: 1;
+    border-radius: 5px;
+    background: var(--border);
+    position: relative;
+  }
+  .streak-day.active { background: var(--accent); }
+  .streak-day.today {
+    outline: 2px solid var(--accent3);
+    outline-offset: 1px;
+  }
+  .streak-day-label {
+    font-size: 9px;
+    color: var(--muted);
+    text-align: center;
+    margin-bottom: 4px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .streak-labels {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+    margin-bottom: 6px;
+  }
+
+  /* BOTTOM NAV */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    padding: 10px 0 20px;
+    z-index: 100;
+  }
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 10px;
+    transition: color 0.2s;
+  }
+  .nav-item.active { color: var(--accent); }
+  .nav-icon { font-size: 20px; }
+
+  /* EMPTY STATE */
+  .empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .empty-icon { font-size: 36px; margin-bottom: 10px; }
+
+  /* DELETE BUTTON */
+  .delete-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 2px 6px;
+    border-radius: 6px;
+    transition: color 0.2s;
+    flex-shrink: 0;
+  }
+  .delete-btn:hover { color: var(--accent2); }
+
+  /* NOTES */
+  .notes-area {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+  .notes-textarea {
+    background: none;
+    border: none;
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    outline: none;
+    resize: none;
+    width: 100%;
+    min-height: 120px;
+  }
+  .notes-textarea::placeholder { color: var(--muted); }
+  .notes-save {
+    text-align: right;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="header-title">Mission Control 🚀</div>
+      <div class="header-date" id="headerDate"></div>
+    </div>
+    <div class="streak-badge" id="streakBadge">🔥 0 day streak</div>
+  </div>
+</div>
+
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="stat-num green" id="statDone">0</div>
+    <div class="stat-label">Done Today</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num red" id="statLeft">0</div>
+    <div class="stat-label">Remaining</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num purple" id="statGoals">0</div>
+    <div class="stat-label">Goals</div>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('today')">Today</div>
+  <div class="tab" onclick="switchTab('pending')">Pending</div>
+  <div class="tab" onclick="switchTab('goals')">Monthly Goals</div>
+  <div class="tab" onclick="switchTab('streak')">Streak</div>
+  <div class="tab" onclick="switchTab('notes')">Notes</div>
+</div>
+
+<!-- TODAY TAB -->
+<div class="section active" id="tab-today">
+  <div class="section-label">Today's Tasks</div>
+  <div id="today-list"></div>
+  <div class="add-task-area" id="add-today-area">
+    <input class="add-input" id="add-today-input" placeholder="What do you need to do today?" />
+    <div class="add-row">
+      <select class="add-select" id="add-today-tag">
+        <option value="ml">🤖 ML/AI</option>
+        <option value="iot">⚡ IoT</option>
+        <option value="career">💼 Career</option>
+        <option value="general">📌 General</option>
+      </select>
+      <select class="add-select" id="add-today-priority">
+        <option value="high">🔴 High</option>
+        <option value="med">🟡 Medium</option>
+        <option value="low">⚪ Low</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary btn-sm" onclick="addTask('today')">Add Task</button>
+      <button class="btn btn-ghost btn-sm" onclick="toggleAddArea('today')">Cancel</button>
+    </div>
+  </div>
+  <button class="add-trigger" onclick="toggleAddArea('today')">
+    <span>+</span> Add today's task
+  </button>
+</div>
+
+<!-- PENDING TAB -->
+<div class="section" id="tab-pending">
+  <div class="section-label">Carry-over & Upcoming</div>
+  <div id="pending-list"></div>
+  <div class="add-task-area" id="add-pending-area">
+    <input class="add-input" id="add-pending-input" placeholder="Task to do later..." />
+    <div class="add-row">
+      <select class="add-select" id="add-pending-tag">
+        <option value="ml">🤖 ML/AI</option>
+        <option value="iot">⚡ IoT</option>
+        <option value="career">💼 Career</option>
+        <option value="general">📌 General</option>
+      </select>
+      <select class="add-select" id="add-pending-priority">
+        <option value="high">🔴 High</option>
+        <option value="med">🟡 Medium</option>
+        <option value="low">⚪ Low</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary btn-sm" onclick="addTask('pending')">Add Task</button>
+      <button class="btn btn-ghost btn-sm" onclick="toggleAddArea('pending')">Cancel</button>
+    </div>
+  </div>
+  <button class="add-trigger" onclick="toggleAddArea('pending')">
+    <span>+</span> Add pending task
+  </button>
+</div>
+
+<!-- GOALS TAB -->
+<div class="section" id="tab-goals">
+  <div class="section-label">Monthly Goals</div>
+  <div id="goals-list"></div>
+  <div class="add-task-area" id="add-goals-area">
+    <input class="add-input" id="add-goals-input" placeholder="Your goal this month..." />
+    <input class="add-input" id="add-goals-deadline" placeholder="Deadline (e.g. Jun 30)" />
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary btn-sm" onclick="addGoal()">Add Goal</button>
+      <button class="btn btn-ghost btn-sm" onclick="toggleAddArea('goals')">Cancel</button>
+    </div>
+  </div>
+  <button class="add-trigger" onclick="toggleAddArea('goals')">
+    <span>+</span> Add monthly goal
+  </button>
+</div>
+
+<!-- STREAK TAB -->
+<div class="section" id="tab-streak">
+  <div class="section-label">Last 28 Days</div>
+  <div class="notes-area">
+    <div class="streak-labels" id="streak-dow-labels"></div>
+    <div class="streak-grid" id="streak-grid"></div>
+    <div style="font-size:12px;color:var(--muted);margin-top:8px">
+      Tap today's square to mark this day as active (you completed tasks).
+    </div>
+  </div>
+  <div class="section-label" style="margin-top:16px">Mark Today</div>
+  <button class="btn btn-primary" onclick="markTodayStreak()" style="width:100%">✅ Mark today as done</button>
+</div>
+
+<!-- NOTES TAB -->
+<div class="section" id="tab-notes">
+  <div class="section-label">Quick Notes / Brain Dump</div>
+  <div class="notes-area">
+    <textarea class="notes-textarea" id="notesArea" placeholder="Write anything here — ideas, blockers, what you learned today..."></textarea>
+    <div class="notes-save">
+      <button class="btn btn-primary btn-sm" onclick="saveNotes()">Save Notes</button>
+    </div>
+  </div>
+  <div id="savedNotesList"></div>
+</div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'manoj_mission_v2';
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return {
+    today: [],
+    pending: [],
+    goals: [],
+    streak: [],
+    notes: []
+  };
+}
+
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+let state = loadState();
+
+// ─── UTILS ───────────────────────────────────────────────────────────────────
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+
+function todayStr() {
+  const d = new Date();
+  return d.toISOString().split('T')[0];
+}
+
+function formatDate(d) {
+  return new Date().toLocaleDateString('en-IN', {weekday:'long', day:'numeric', month:'long'});
+}
+
+// ─── RENDER HEADER ───────────────────────────────────────────────────────────
+function renderHeader() {
+  document.getElementById('headerDate').textContent = formatDate(new Date());
+
+  const done = state.today.filter(t => t.done).length;
+  const left = state.today.filter(t => !t.done).length;
+  const goals = state.goals.length;
+
+  document.getElementById('statDone').textContent = done;
+  document.getElementById('statLeft').textContent = left;
+  document.getElementById('statGoals').textContent = goals;
+
+  // streak
+  const streak = calcStreak();
+  document.getElementById('streakBadge').textContent = `🔥 ${streak} day streak`;
+}
+
+function calcStreak() {
+  if (!state.streak || state.streak.length === 0) return 0;
+  const sorted = [...new Set(state.streak)].sort().reverse();
+  let count = 0;
+  let check = new Date();
+  check.setHours(0,0,0,0);
+  for (let i = 0; i < sorted.length; i++) {
+    const d = new Date(sorted[i]);
+    d.setHours(0,0,0,0);
+    if (d.getTime() === check.getTime()) {
+      count++;
+      check.setDate(check.getDate() - 1);
+    } else if (i === 0 && d.getTime() === check.getTime() - 86400000) {
+      count++;
+      check = d;
+      check.setDate(check.getDate() - 1);
+    } else break;
+  }
+  return count;
+}
+
+// ─── TASKS ───────────────────────────────────────────────────────────────────
+function renderTasks(list, containerId) {
+  const el = document.getElementById(containerId);
+  if (!list || list.length === 0) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">📋</div>No tasks yet. Add one below.</div>`;
+    return;
+  }
+  el.innerHTML = list.map(t => `
+    <div class="task-card ${t.done ? 'done' : ''}" id="task-${t.id}">
+      <div class="checkbox" onclick="toggleTask('${t.type}','${t.id}')">
+        <div class="checkbox-inner"></div>
+      </div>
+      <div class="task-body" onclick="toggleTask('${t.type}','${t.id}')">
+        <div class="task-title">${t.title}</div>
+        <div class="task-meta">
+          <span class="tag ${t.tag}">${tagLabel(t.tag)}</span>
+          <span class="task-priority priority-${t.priority}">${priorityLabel(t.priority)}</span>
+        </div>
+      </div>
+      <button class="delete-btn" onclick="deleteTask('${t.type}','${t.id}')">×</button>
+    </div>
+  `).join('');
+}
+
+function tagLabel(tag) {
+  return {ml:'ML/AI', iot:'IoT', career:'Career', general:'General'}[tag] || tag;
+}
+function priorityLabel(p) {
+  return {high:'🔴 High', med:'🟡 Med', low:'⚪ Low'}[p] || p;
+}
+
+function toggleTask(type, id) {
+  const list = state[type];
+  const t = list.find(x => x.id === id);
+  if (!t) return;
+  t.done = !t.done;
+  saveState();
+  renderAll();
+}
+
+function deleteTask(type, id) {
+  state[type] = state[type].filter(x => x.id !== id);
+  saveState();
+  renderAll();
+}
+
+function addTask(type) {
+  const input = document.getElementById(`add-${type}-input`);
+  const tag = document.getElementById(`add-${type}-tag`).value;
+  const priority = document.getElementById(`add-${type}-priority`).value;
+  const title = input.value.trim();
+  if (!title) return;
+  state[type].push({ id: uid(), title, tag, priority, done: false, type, created: todayStr() });
+  input.value = '';
+  saveState();
+  renderAll();
+  document.getElementById(`add-${type}-area`).classList.remove('open');
+}
+
+// ─── GOALS ───────────────────────────────────────────────────────────────────
+function renderGoals() {
+  const el = document.getElementById('goals-list');
+  if (!state.goals || state.goals.length === 0) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">🎯</div>No goals yet. Add your first monthly goal.</div>`;
+    return;
+  }
+  el.innerHTML = state.goals.map(g => `
+    <div class="goal-card">
+      <div class="goal-header">
+        <div class="goal-title">${g.title}</div>
+        <div class="goal-deadline">${g.deadline || ''}</div>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width:${g.progress}%"></div>
+      </div>
+      <div class="goal-footer">
+        <div class="goal-pct">${g.progress}% complete</div>
+        <div class="goal-controls">
+          <button class="goal-btn" onclick="adjustGoal('${g.id}', -10)">−</button>
+          <button class="goal-btn" onclick="adjustGoal('${g.id}', 10)">+</button>
+          <button class="goal-btn" onclick="deleteGoal('${g.id}')" style="color:#ff6a6a">×</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addGoal() {
+  const title = document.getElementById('add-goals-input').value.trim();
+  const deadline = document.getElementById('add-goals-deadline').value.trim();
+  if (!title) return;
+  state.goals.push({ id: uid(), title, deadline, progress: 0 });
+  document.getElementById('add-goals-input').value = '';
+  document.getElementById('add-goals-deadline').value = '';
+  saveState();
+  renderAll();
+  document.getElementById('add-goals-area').classList.remove('open');
+}
+
+function adjustGoal(id, delta) {
+  const g = state.goals.find(x => x.id === id);
+  if (!g) return;
+  g.progress = Math.min(100, Math.max(0, g.progress + delta));
+  saveState();
+  renderGoals();
+  renderHeader();
+}
+
+function deleteGoal(id) {
+  state.goals = state.goals.filter(x => x.id !== id);
+  saveState();
+  renderAll();
+}
+
+// ─── STREAK ──────────────────────────────────────────────────────────────────
+function renderStreak() {
+  const grid = document.getElementById('streak-grid');
+  const labels = document.getElementById('streak-dow-labels');
+  const days = ['S','M','T','W','T','F','S'];
+  labels.innerHTML = days.map(d => `<div class="streak-day-label">${d}</div>`).join('');
+
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const cells = [];
+  for (let i = 27; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const ds = d.toISOString().split('T')[0];
+    const isToday = i === 0;
+    const isActive = state.streak && state.streak.includes(ds);
+    cells.push(`<div class="streak-day ${isActive ? 'active' : ''} ${isToday ? 'today' : ''}" title="${ds}" onclick="toggleStreakDay('${ds}')"></div>`);
+  }
+
+  // pad start to align to Sunday
+  const firstDay = new Date(today);
+  firstDay.setDate(firstDay.getDate() - 27);
+  const startDow = firstDay.getDay();
+  const padding = Array(startDow).fill('<div></div>').join('');
+  grid.innerHTML = padding + cells.join('');
+}
+
+function toggleStreakDay(ds) {
+  if (!state.streak) state.streak = [];
+  const idx = state.streak.indexOf(ds);
+  if (idx >= 0) state.streak.splice(idx, 1);
+  else state.streak.push(ds);
+  saveState();
+  renderStreak();
+  renderHeader();
+}
+
+function markTodayStreak() {
+  if (!state.streak) state.streak = [];
+  const ds = todayStr();
+  if (!state.streak.includes(ds)) {
+    state.streak.push(ds);
+    saveState();
+  }
+  renderStreak();
+  renderHeader();
+}
+
+// ─── NOTES ───────────────────────────────────────────────────────────────────
+function renderNotes() {
+  const el = document.getElementById('savedNotesList');
+  if (!state.notes || state.notes.length === 0) { el.innerHTML = ''; return; }
+  el.innerHTML = `<div class="section-label" style="margin-top:16px">Saved Notes</div>` +
+    state.notes.slice().reverse().map(n => `
+      <div class="notes-area" style="margin-bottom:10px">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-family:'JetBrains Mono',monospace">${n.date}</div>
+        <div style="font-size:14px;line-height:1.6;white-space:pre-wrap">${n.text}</div>
+        <div style="text-align:right;margin-top:8px">
+          <button class="btn btn-ghost btn-sm" onclick="deleteNote('${n.id}')">Delete</button>
+        </div>
+      </div>
+    `).join('');
+}
+
+function saveNotes() {
+  const text = document.getElementById('notesArea').value.trim();
+  if (!text) return;
+  if (!state.notes) state.notes = [];
+  state.notes.push({ id: uid(), text, date: new Date().toLocaleString('en-IN') });
+  document.getElementById('notesArea').value = '';
+  saveState();
+  renderNotes();
+}
+
+function deleteNote(id) {
+  state.notes = state.notes.filter(x => x.id !== id);
+  saveState();
+  renderNotes();
+}
+
+// ─── TABS ────────────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById(`tab-${tab}`).classList.add('active');
+}
+
+function toggleAddArea(type) {
+  const area = document.getElementById(`add-${type}-area`);
+  area.classList.toggle('open');
+  if (area.classList.contains('open')) {
+    document.getElementById(`add-${type}-input`).focus();
+  }
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+function renderAll() {
+  renderTasks(state.today, 'today-list');
+  renderTasks(state.pending, 'pending-list');
+  renderGoals();
+  renderStreak();
+  renderNotes();
+  renderHeader();
+}
+
+// Seed with Manoj's actual roadmap tasks if empty
+if (state.today.length === 0 && state.pending.length === 0 && state.goals.length === 0) {
+  state.today = [
+    { id: uid(), title: 'Open Colab — run Project C starter code (Whisper + LLM pipeline)', tag: 'ml', priority: 'high', done: false, type: 'today', created: todayStr() },
+    { id: uid(), title: 'Create GitHub account and push at least one repo', tag: 'career', priority: 'high', done: false, type: 'today', created: todayStr() },
+  ];
+  state.pending = [
+    { id: uid(), title: 'Project A: RAG pipeline with vector database', tag: 'ml', priority: 'high', done: false, type: 'pending', created: todayStr() },
+    { id: uid(), title: 'Project D: Voice-controlled ESP32 agent (when hardware ready)', tag: 'iot', priority: 'med', done: false, type: 'pending', created: todayStr() },
+    { id: uid(), title: 'Project B: LoRA fine-tuning (last priority)', tag: 'ml', priority: 'low', done: false, type: 'pending', created: todayStr() },
+    { id: uid(), title: 'Write first LinkedIn post about any project', tag: 'career', priority: 'med', done: false, type: 'pending', created: todayStr() },
+  ];
+  state.goals = [
+    { id: uid(), title: 'Complete Project C (Whisper+LLM pipeline) end to end', deadline: 'Jun 30', progress: 0 },
+    { id: uid(), title: 'Get GitHub with 2+ real repos live', deadline: 'Jun 30', progress: 0 },
+    { id: uid(), title: 'Apply to 3 hackathons', deadline: 'Jul 15', progress: 0 },
+  ];
+  saveState();
+}
+
+renderAll();
+</script>
+</body>
+</html>
